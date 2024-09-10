@@ -1,0 +1,338 @@
+
+    local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+    local Window = OrionLib:MakeWindow({Name = "Neptune Hub 🔱", HidePremium = false, SaveConfig = false, ConfigFolder = "Grand Píece Online Script"})
+
+    OrionLib:MakeNotification({
+        Name = "Você Executou o Script",
+        Content = "Use e Abuse",
+        Image = nil,
+        Time = 5
+    })
+
+local Tab = Window:MakeTab({
+	Name = "🥇 Battle Royale",
+	Icon = nil,
+	PremiumOnly = false
+})
+
+local Section = Tab:AddSection({
+	Name = "Main"
+})
+
+Tab:AddButton({
+    Name = "Pulo Infinito",
+    Callback = function()
+        _G.infinjump = not _G.infinjump
+
+        if _G.infinJumpStarted == nil then
+            _G.infinJumpStarted = true
+            game.StarterGui:SetCore("SendNotification", {Title="You Activated Infinite Jump!"; Text="Infinite Jump Activated!"; Duration=5;})
+
+            local plr = game:GetService('Players').LocalPlayer
+            local m = plr:GetMouse()
+            m.KeyDown:connect(function(k)
+                if _G.infinjump then
+                    if k:byte() == 32 then
+                        local humanoid = game:GetService('Players').LocalPlayer.Character:FindFirstChildOfClass('Humanoid')
+                        humanoid:ChangeState('Jumping')
+                        wait()
+                        humanoid:ChangeState('Seated')
+                    end
+                end
+            end)
+        end
+    end
+})
+
+local function removeFallDamage()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+
+    humanoid.StateChanged:Connect(function(_, newState)
+        if newState == Enum.HumanoidStateType.Freefall then
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+        elseif newState == Enum.HumanoidStateType.Landed then
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+        end
+    end)
+end
+
+local function restoreFallDamage()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+
+    humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+    humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+end
+
+-- Toggle: Remover Dano de Queda
+Tab:AddToggle({
+    Name = "Tirar Dano de Queda",
+    CurrentValue = false,
+    Flag = "ToggleFallDamage",
+    Callback = function(Value)
+        if Value then
+            removeFallDamage()
+        else
+            restoreFallDamage()
+        end
+    end,
+})
+
+local Slider = Tab:AddSlider({
+    Name = "Velocidade",
+    Min = 25,
+	Max = 100,
+	Default = 25,
+	Color = Color3.fromRGB(255,255,255),
+	Increment = 1,
+	ValueName = "Speed",
+    Callback = function(Value)
+        local player = game.Players.LocalPlayer
+        if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.WalkSpeed = Value
+        end
+    end,
+})
+
+-- Função para garantir que a velocidade seja mantida
+local function updateWalkSpeed()
+    local player = game.Players.LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = Slider.CurrentValue
+    end
+end
+
+-- Atualiza a velocidade quando o slider é alterado
+Slider.Callback = function(Value)
+    updateWalkSpeed()
+end
+
+-- Atualiza a velocidade quando o personagem reaparece
+game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
+    character:WaitForChild("Humanoid").WalkSpeed = Slider.CurrentValue
+end)
+
+-- Variáveis principais
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = game:GetService("Workspace").CurrentCamera
+
+-- Função para interpolar suavemente entre duas cores
+local function lerpColor(color1, color2, alpha)
+    return Color3.new(
+        color1.R + (color2.R - color1.R) * alpha,
+        color1.G + (color2.G - color1.G) * alpha,
+        color1.B + (color2.B - color1.B) * alpha
+    )
+end
+
+-- Função para obter a cor com transição suave baseada na distância
+local function getSmoothColor(distanceMeters)
+    if distanceMeters < 50 then
+        return Color3.fromRGB(0, 255, 0) -- Verde (perto)
+    elseif distanceMeters < 125 then
+        local alpha = (distanceMeters - 50) / (125 - 50) -- Normaliza entre 50 e 125 metros
+        return lerpColor(Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 255, 255), alpha) -- Interpola entre verde e ciano
+    elseif distanceMeters < 200 then
+        local alpha = (distanceMeters - 125) / (200 - 125) -- Normaliza entre 125 e 200 metros
+        return lerpColor(Color3.fromRGB(0, 255, 255), Color3.fromRGB(255, 0, 0), alpha) -- Interpola entre ciano e vermelho
+    else
+        return Color3.fromRGB(255, 0, 0) -- Vermelho (longe)
+    end
+end
+
+-- Função para criar um ESP para um jogador
+local function createESP(player)
+    if player.Character and player.Character:FindFirstChild("Head") then
+        local BillboardGui = Instance.new("BillboardGui")
+        local TextLabel = Instance.new("TextLabel")
+
+        BillboardGui.Name = "ESP"
+        BillboardGui.Adornee = player.Character.Head
+        BillboardGui.Size = UDim2.new(0, 100, 0, 100)
+        BillboardGui.StudsOffset = Vector3.new(0, 2, 0)
+        BillboardGui.AlwaysOnTop = true
+
+        TextLabel.Parent = BillboardGui
+        TextLabel.Size = UDim2.new(1, 0, 1, 0)
+        TextLabel.BackgroundTransparency = 1
+        TextLabel.TextScaled = true
+
+        -- Atualiza o texto e a cor para mostrar o nome e a distância em metros
+        game:GetService("RunService").RenderStepped:Connect(function()
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local distanceStuds = (LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                local distanceMeters = distanceStuds * 0.28  -- Converte de studs para metros
+                TextLabel.Text = string.format("%s (%.2f metros)", player.Name, distanceMeters)
+
+                -- Define a cor com base na distância em metros com transição suave
+                TextLabel.TextColor3 = getSmoothColor(distanceMeters)
+            end
+        end)
+
+        BillboardGui.Parent = player.Character.Head
+    end
+end
+
+-- Função para remover ESP de um jogador
+local function removeESP(player)
+    if player.Character and player.Character:FindFirstChild("Head") then
+        local ESP = player.Character.Head:FindFirstChild("ESP")
+        if ESP then
+            ESP:Destroy()
+        end
+    end
+end
+
+-- Toggle para ativar/desativar o ESP
+local ToggleESP = Tab:AddToggle({
+    Name = "ESP Player",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            -- Ativa ESP para todos os jogadores
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+                    createESP(player)
+                end
+            end
+
+            -- Conexões para novos jogadores e remoção de jogadores
+            playerAddedConnection = Players.PlayerAdded:Connect(function(player)
+                player.CharacterAdded:Connect(function(character)
+                    wait(1) -- Espera um segundo para garantir que o personagem esteja carregado
+                    createESP(player)
+                end)
+            end)
+
+            playerRemovingConnection = Players.PlayerRemoving:Connect(function(player)
+                removeESP(player)
+            end)
+        else
+            -- Remove ESP de todos os jogadores
+            for _, player in pairs(Players:GetPlayers()) do
+                removeESP(player)
+            end
+
+            -- Desconecta as conexões
+            if playerAddedConnection then
+                playerAddedConnection:Disconnect()
+            end
+            if playerRemovingConnection then
+                playerRemovingConnection:Disconnect()
+            end
+        end
+    end
+})
+
+-- Certifique-se de que o ESP não está ativado na inicialização
+for _, player in pairs(Players:GetPlayers()) do
+    removeESP(player)
+end
+
+local Section = Tab:AddSection({
+	Name = "ESPs de Baú"
+})
+
+local Tab = Window:MakeTab({
+    Name = "👩‍🍳 Farm",
+	Icon = nil,
+	PremiumOnly = false
+})
+
+-- Criar uma aba para as configurações
+local MainTab = Window:MakeTab({
+    Name = "⚙️ Settings",
+    Icon = nil, -- Substitua com o ID de ícone desejado
+    PremiumOnly = false
+})
+
+-- Adicionar uma seção à aba de configurações
+local MainSection = MainTab:AddSection({
+    Name = "Settings"
+})
+
+-- Botão: Otimizar Desempenho
+MainTab:AddButton({
+    Name = "Remover Texturas (Modo Leve)",
+    Callback = function()
+        -- Remover texturas
+        for _, object in pairs(game.Workspace:GetDescendants()) do
+            if object:IsA("BasePart") and object:FindFirstChildOfClass("Texture") then
+                object:FindFirstChildOfClass("Texture"):Destroy()
+            end
+        end
+        
+        -- Desativar sombras
+        game.Lighting.GlobalShadows = false
+        
+        -- Desativar reflexos
+        game.Lighting.EnvironmentSpecularScale = 0
+        game.Lighting.EnvironmentDiffuseScale = 0
+        
+        -- Desativar partículas
+        for _, object in pairs(game.Workspace:GetDescendants()) do
+            if object:IsA("ParticleEmitter") or object:IsA("Trail") then
+                object.Enabled = false
+            end
+        end
+    end
+})
+
+-- Botão: FullBright
+MainTab:AddButton({
+    Name = "FullBright",
+    Callback = function()
+        -- Aumentar brilho
+        game.Lighting.Brightness = 2
+        
+        -- Aumentar exposição
+        game.Lighting.ExposureCompensation = 1
+        
+        -- Ajustar cor ambiente
+        game.Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        
+        -- Ajustar cor do céu
+        if game.Lighting:FindFirstChildOfClass("Sky") then
+            local sky = game.Lighting:FindFirstChildOfClass("Sky")
+            sky.SkyboxBk = "rbxassetid://12345678"
+            sky.SkyboxDn = "rbxassetid://12345678"
+            sky.SkyboxFt = "rbxassetid://12345678"
+            sky.SkyboxLf = "rbxassetid://12345678"
+            sky.SkyboxRt = "rbxassetid://12345678"
+            sky.SkyboxUp = "rbxassetid://12345678"
+        end
+    end
+})
+
+-- Botão: Remover Fog
+MainTab:AddButton({
+    Name = "Remover Fog",
+    Callback = function()
+        -- Remover fog
+        game.Lighting.FogEnd = 1000000
+    end
+})
+
+-- Botão: Fov 120
+MainTab:AddButton({
+    Name = "Fov 120",
+    Callback = function()
+        -- Ajustar FOV para 120
+        game.Workspace.CurrentCamera.FieldOfView = 120
+    end
+})
+
+-- Botão: Fov 70 (Normal)
+MainTab:AddButton({
+    Name = "Fov 70 (Normal)",
+    Callback = function()
+        -- Ajustar FOV para 70
+        game.Workspace.CurrentCamera.FieldOfView = 70
+    end
+})
