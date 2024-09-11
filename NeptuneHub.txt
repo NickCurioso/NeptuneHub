@@ -1,13 +1,5 @@
-
-    local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
-    local Window = OrionLib:MakeWindow({Name = "Neptune Hub 🔱", HidePremium = false, SaveConfig = false, ConfigFolder = "Grand Píece Online Script"})
-
-    OrionLib:MakeNotification({
-        Name = "Você Executou o Script",
-        Content = "Use e Abuse",
-        Image = nil,
-        Time = 5
-    })
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local Window = OrionLib:MakeWindow({Name = "Neptune Hub 🔱", HidePremium = false, SaveConfig = false, ConfigFolder = "Grand Píece Online Script"})
 
 local Tab = Window:MakeTab({
 	Name = "🥇 Battle Royale",
@@ -84,38 +76,43 @@ Tab:AddToggle({
 })
 
 local Slider = Tab:AddSlider({
-    Name = "Velocidade",
+    Name = "Velocidade (Mude Ela Quando Executar)",
     Min = 25,
-	Max = 100,
-	Default = 25,
-	Color = Color3.fromRGB(255,255,255),
-	Increment = 1,
-	ValueName = "Speed",
+    Max = 70,
+    Default = 25,
+    Color = Color3.fromRGB(255,255,255),
+    Increment = 1,
+    ValueName = "Speed",
     Callback = function(Value)
-        local player = game.Players.LocalPlayer
-        if player and player.Character and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid.WalkSpeed = Value
-        end
+        _G.WalkSpeed = Value
     end,
 })
+
+-- Inicializa o valor da velocidade
+_G.WalkSpeed = Slider.Default
 
 -- Função para garantir que a velocidade seja mantida
 local function updateWalkSpeed()
     local player = game.Players.LocalPlayer
     if player and player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.WalkSpeed = Slider.CurrentValue
+        local humanoid = player.Character.Humanoid
+        if humanoid.WalkSpeed ~= _G.WalkSpeed then
+            humanoid.WalkSpeed = _G.WalkSpeed
+        end
     end
 end
 
--- Atualiza a velocidade quando o slider é alterado
-Slider.Callback = function(Value)
+-- Atualiza a velocidade a cada quadro
+game:GetService("RunService").RenderStepped:Connect(function()
     updateWalkSpeed()
-end
+end)
 
 -- Atualiza a velocidade quando o personagem reaparece
 game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
-    character:WaitForChild("Humanoid").WalkSpeed = Slider.CurrentValue
+    character:WaitForChild("Humanoid").WalkSpeed = _G.WalkSpeed
 end)
+
+
 
 -- Variáveis principais
 local Players = game:GetService("Players")
@@ -239,15 +236,17 @@ local Section = Tab:AddSection({
 	Name = "ESPs de Baú"
 })
 
+
 local Tab = Window:MakeTab({
     Name = "👩‍🍳 Farm",
 	Icon = nil,
 	PremiumOnly = false
 })
 
+
 -- Criar uma aba para as configurações
 local MainTab = Window:MakeTab({
-    Name = "⚙️ Settings",
+    Name = "⚙️ Configurações",
     Icon = nil, -- Substitua com o ID de ícone desejado
     PremiumOnly = false
 })
